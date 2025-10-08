@@ -1,0 +1,13 @@
+{
+  "name": "nodejs-docker-ci-cd",
+  "version": "1.0.0",
+  "description": "A simple Node.js app for Jenkins CI/CD.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Running dummy test...\" && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
