@@ -14,7 +14,7 @@ pipeline {
             steps {
                 echo 'Running install & test inside node container...'
                 sh '''
-                docker run --rm -v $PWD:/app -w /app node:18 sh -c "
+                docker run --rm -v $WORKSPACE:/app -w /app node:18 sh -c "
                   npm install &&
                   npm test
                 "
@@ -67,4 +67,3 @@ pipeline {
         }
     }
 }
-
