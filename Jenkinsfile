@@ -1,11 +1,5 @@
 pipeline {
-    // Run the entire pipeline inside a Docker container with Node.js
-    agent {
-        docker {
-            image 'node:18' // ✅ Includes Node.js and npm
-            args '-v /var/run/docker.sock:/var/run/docker.sock' // ✅ Mount Docker socket so we can build images
-        }
-    }
+    agent any
 
     environment {
         DOCKER_IMAGE_NAME = 'nodejs-cicd-app'
@@ -16,20 +10,15 @@ pipeline {
     }
 
     stages {
-        stage('Preparation & Checkout') {
-            steps {
-                echo 'Starting CI/CD pipeline...'
-                // Code is automatically checked out in Declarative pipelines
-            }
-        }
-
         stage('Install & Test') {
             steps {
-                echo 'Installing Node dependencies...'
-                sh 'npm install'
-
-                echo 'Running tests...'
-                sh 'npm test' // This will work if test script is defined in package.json
+                echo 'Running install & test inside node container...'
+                sh '''
+                docker run --rm -v $PWD:/app -w /app node:18 sh -c "
+                  npm install &&
+                  npm test
+                "
+                '''
             }
         }
 
@@ -71,10 +60,10 @@ pipeline {
             echo "Pipeline finished. Build status: ${currentBuild.result}"
         }
         success {
-            echo '✅ Deployment successful! Check the app at http://<Your-Jenkins-Host-IP>:3000'
+            echo '✅ Deployment successful! Check the app at http://<Jenkins-Host>:3000'
         }
         failure {
-            echo '❌ Deployment FAILED. Check console log for errors.'
+            echo '❌ Deployment FAILED. Check logs.'
         }
     }
 }
