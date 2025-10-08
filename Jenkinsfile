@@ -3,28 +3,36 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_NAME = 'nodejs-cicd-app'
-        DOCKER_REGISTRY   = 'shrikantdayma'
+        DOCKER_REGISTRY   = 'shrikantdayma' // Your GitHub/Docker Hub username
         IMAGE_TAG         = "${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}"
         IMAGE_LATEST      = "${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:latest"
         CONTAINER_NAME    = 'nodejs-cicd-container'
     }
 
     stages {
-        stage('Install & Test') {
+        stage('Preparation & Verification') {
             steps {
-                echo 'Running install & test inside node container...'
-                sh '''
-                docker run --rm -v $WORKSPACE:/app -w /app node:18 sh -c "
-                  npm install &&
-                  npm test
-                "
-                '''
+                echo 'Starting CI/CD pipeline and verifying workspace contents...'
+                // Debug step to confirm files are checked out correctly
+                sh "ls -R \$WORKSPACE" 
             }
         }
+        
+        // --- FINAL FIX: Running NPM directly on the Agent's shell ---
+        // This stage relies on 'nodejs' and 'npm' being installed on the Jenkins agent.
+        stage('Install & Test') {
+            steps {
+                echo 'Installing dependencies and running tests directly on Agent shell.'
+                sh 'npm install'
+                sh 'npm test' 
+            }
+        }
+        // -------------------------------------------------------------
 
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker image: ${IMAGE_TAG}"
+                // This relies on the 'docker' client being installed on the Jenkins agent.
                 sh "docker build -t ${IMAGE_TAG} ."
                 sh "docker tag ${IMAGE_TAG} ${IMAGE_LATEST}"
             }
@@ -37,7 +45,7 @@ pipeline {
                     credentialsId: 'dockerhub-credentials',
                     usernameVariable: 'DOCKER_USR',
                     passwordVariable: 'DOCKER_PSW')]) {
-
+                    
                     sh "echo ${DOCKER_PSW} | docker login -u ${DOCKER_USR} --password-stdin"
                     sh "docker push ${IMAGE_TAG}"
                     sh "docker push ${IMAGE_LATEST}"
@@ -60,10 +68,11 @@ pipeline {
             echo "Pipeline finished. Build status: ${currentBuild.result}"
         }
         success {
-            echo '✅ Deployment successful! Check the app at http://<Jenkins-Host>:3000'
+            echo '✅ Deployment successful! Check the app at http://<Jenkins-Host-IP>:3000'
         }
         failure {
-            echo '❌ Deployment FAILED. Check logs.'
+            echo '❌ Deployment FAILED. Check console log for errors.'
         }
     }
 }
+
